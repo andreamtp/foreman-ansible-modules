@@ -262,6 +262,9 @@ except ImportError:
     from urllib.parse import urljoin  # type: ignore
 
 
+NO_CONTENT = 204
+
+
 def _qs_param(param):
     # type: (Any) -> Any
     if isinstance(param, bool):
@@ -282,6 +285,7 @@ class Api(object):
     :param apidoc_cache_dir: where to cache the JSON description of the API. Defaults to `apidoc_cache_base_dir/<URI>`.
     :param apidoc_cache_name: name of the cache file. If there is cache in the `apidoc_cache_dir`, it is used. Defaults to `default`.
     :param verify_ssl: should the SSL certificate be verified. Defaults to `True`.
+    :param session: a `requests.Session` compatible object. Defaults to `requests.Session()`.
 
     Usage::
 
@@ -306,7 +310,7 @@ class Api(object):
         self.apidoc_cache_dir = kwargs.get('apidoc_cache_dir', apidoc_cache_dir_default)
         self.apidoc_cache_name = kwargs.get('apidoc_cache_name', self._find_cache_name())
 
-        self._session = requests.Session()
+        self._session = kwargs.get('session') or requests.Session()
         self._session.verify = kwargs.get('verify_ssl', True)
 
         self._session.headers['Accept'] = 'application/json;version={}'.format(self.api_version)
@@ -531,7 +535,7 @@ class Api(object):
         request = self._session.request(http_method, full_path, **kwargs)
         request.raise_for_status()
         self.validate_cache(request.headers.get('apipie-checksum'))
-        if request.status_code == requests.codes['no_content']:
+        if request.status_code == NO_CONTENT:
             return None
         return request.json()
 
